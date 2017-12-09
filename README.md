@@ -2,6 +2,7 @@
 Collection of perl scripts to organize huge sets of folders and files.
 
 [[ Background ]]
+
 At work we use a shared drive which has appr. 1,5 TB of data which accumulated there over the last decade.
 Lots of people joined the company and moved on again.
 But their (valuable) data do still exist on this drive.
@@ -13,6 +14,7 @@ Since we have to pay for each MB, inspired by existing software and the fun of p
 We are working within a Microsoft environment thus this software focusses on this OS but might rund on other systems too.
 
 [[ Functionality ]]
+
 The functions I plan to implement are as follows:
 1)  Index all available files and directories in and below a given starting directory.
 2)  Retrieve some data about the files and directories like:
