@@ -10,6 +10,8 @@ Thus we ended up with a lot of redundant and partly abandoned data.
 
 Since we have to pay for each MB, inspired by existing software and the fun of programming with perl I created this 'project' to optimize and maintain our drive.
 
+We are working within a Microsoft environment thus this software focusses on this OS but might rund on other systems too.
+
 [[ Functionality ]]
 The functions I plan to implement are as follows:
 1)  Index all available files and directories in and below a given starting directory.
