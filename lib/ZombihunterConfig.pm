@@ -36,7 +36,16 @@ sub read_config {
 
 		my ($key, $settings) = split '\|', $line;
 		my @values = split ';', $settings;
-		$config{$key} = \@values;
+
+		if ( scalar @values > 1 ) {
+			$config{$key} = \@values;
+		}
+		elsif (scalar @values == 1 ) {
+			$config{$key} = $values[0];
+		}
+		else {
+			warn "Problem with config setting $key: $!";
+		}
 	}
 	close CONFIG;
 
