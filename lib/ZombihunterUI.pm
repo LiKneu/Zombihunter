@@ -1,13 +1,17 @@
 package lib::ZombihunterUI;
 
 #-------------------------------------------------------------------------------
-#
-#
+#   This module holds user interface (UI) functions.
+#   The UI is based on Win32::Console commands.
 #-------------------------------------------------------------------------------
 
 use strict;
 use warnings;
 use 5.24.0;
+
+use Win32::Console;
+
+use lib::ScanFolders;
 
 require Exporter;
 
@@ -17,17 +21,17 @@ our @EXPORT = qw (
 	initiate_console
 	show_main_menu
 	edit_config
+	show_scan_folder
+	show_scanning
 	show_help
 	);
 
 our $CONSOLE;
 
-use Win32::Console;
-
 sub initiate_console {
 	$CONSOLE = Win32::Console->new(STD_OUTPUT_HANDLE);
 	$CONSOLE->Title("ZombiHunter");
-	$CONSOLE->SetIcon("./graphics/skull.ico");  # set application icon
+	$CONSOLE->SetIcon("./graphics/skull_01.ico");  # set application icon
 	$CONSOLE->Window(1, 0, 0, 80, 25);	        # set size of console
 }
 
@@ -73,6 +77,34 @@ sub edit_config {
 	elsif ( $input =~ /n|N/ ) {
 		return '';
 	}
+}
+
+#-------------------------------------------------------------------------------
+#   Shows the menu to start scanning of chosen folder/drive
+#
+sub show_scan_folder {
+	my $folder = shift;
+
+	$CONSOLE->Cls();
+	print "\n  S C A N  F O L D E R\n\n";
+	print "\n  Start scanning " . uc ($folder) . " (y/n)? ";
+
+	my $input = <STDIN>;
+	chomp $input;
+	if ( $input =~ /y|Y/ ) {
+		return '1';
+	}
+	elsif ( $input =~ /n|N/ ) {
+		return '0';
+	}
+}
+
+#-------------------------------------------------------------------------------
+#   Shows a status while scanning folders/drives
+#
+sub show_scanning {
+	$CONSOLE->Cls();
+	print "\n  S C A N N I N G\n\n";
 }
 
 #-------------------------------------------------------------------------------
