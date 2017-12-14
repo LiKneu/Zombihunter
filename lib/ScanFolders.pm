@@ -9,6 +9,9 @@ use Directory::Scanner;
 use File::Find;
 use Digest::MD5;
 use Text::CSV;
+use Win32::Console;
+
+use lib::ZombihunterUI;
 
 require Exporter;
 
@@ -16,9 +19,11 @@ our @ISA = qw ( Exporter );
 
 our @EXPORT = qw (
 	scan_folders
+	process_file
 	);
 
-my $fh;
+my $fh;     # file handle to output scan results
+my $err_fh; # file handle to output error messages
 my $csv;
 
 #-------------------------------------------------------------------------------
@@ -31,14 +36,15 @@ sub scan_folders {
 	my @present_time = localtime ( time );
 
 	# file name format: zh_log_YYYY-MM-TT_hh_mm_ss.txt
-	my $logfile_name = '.\zh_log_' .
+	my $time_stamp =
 		($present_time[5] += 1900) .    # year
 		'-' . ($present_time[4] += 1) . # month
 		'-' . $present_time[3] .        # day
 		'_' . $present_time[2] .        # hour
 		'_' . $present_time[1] .        # min
-		'_' . $present_time[0] .        # sec
-		'.txt';
+		'_' . $present_time[0];         # sec
+
+	my $logfile_name = '.\scans\zh_log_' . $time_stamp . '.txt';
 
 	$csv = Text::CSV->new ( {
 		binary   		=> 1,
@@ -46,7 +52,13 @@ sub scan_folders {
 		always_quote	=> 1,
 	} ) or die "Cannot use CSV: ".Text::CSV->error_diag ();
 
-	open $fh, ">:encoding(utf8)", $logfile_name or die "$logfile_name: $!";
+	open $fh, ">:encoding(utf8)", $logfile_name or
+		die "Couldn't open file for scan results $logfile_name: $!";
+
+	open $err_fh, ">:encoding(utf8)", './logs/error_' . $time_stamp . '.log' or
+		die "Couldn't open file for error log $err_fh: $!";
+
+	say $fh "DIRECTORY SCAN FROM $time_stamp: $dir";
 
 	Directory::Scanner->for($dir)
 		->recurse                           # recurse through subdirectories
@@ -55,6 +67,9 @@ sub scan_folders {
 		->stream                            # start streaming
 		->flatten;                          # flatten object to array??
 
+	print $fh "END OF SCAN FILE";
+
+	close $err_fh;
 	close $fh;
 }
 
@@ -64,12 +79,23 @@ sub scan_folders {
 #       extension
 #       file size
 #       last access
-#       last mdification
+#       last modification
 #       last change
 #       MD5 checksum
 #
 sub process_file {
 	my $path = shift;
+	state $count;
+
+	# give the status of the scanning process so that user doesn't interrupt
+	# the script
+	$lib::ZombihunterUI::CONSOLE->WriteChar (
+		"No. of files scanned: " . $count++, 2, 4 );
+
+	# clear content in the console before..
+	$lib::ZombihunterUI::CONSOLE->FillChar(" ", 100*4, 0, 6);
+	# ..writing it anew
+	$lib::ZombihunterUI::CONSOLE->WriteChar ( $path, 2, 6 );
 
 	my $md5 = checksum ( $path );
 
@@ -97,7 +123,6 @@ sub process_file {
 		$last_mod,
 		$last_change,
 		$md5 ];
-#	say join ", ", @$line;
 
 	my $status = $csv->print ($fh, $line);
 	print $fh "\n";
@@ -109,12 +134,16 @@ sub process_file {
 sub checksum {
 	my $file = shift;
 
-	open(FILE, '<', $file) or warn "Can't open $file: $!";
-	binmode(FILE);
-	my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest;
-	close FILE;
+	my $md5;
 
-	return($md5);
+	if ( open(FILE, '<', $file) ) {
+		binmode(FILE);
+		$md5 = Digest::MD5->new->addfile(*FILE)->hexdigest;
+		return($md5);
+	}
+	else {
+		say $err_fh "Cant open $file for MD5 calculation: $!";
+	}
 }
 
 1;
