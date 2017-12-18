@@ -29,8 +29,10 @@ our @EXPORT = qw (
 our $CONSOLE;
 
 sub initiate_console {
+	my $version = shift;
+
 	$CONSOLE = Win32::Console->new(STD_OUTPUT_HANDLE);
-	$CONSOLE->Title("ZombiHunter");
+	$CONSOLE->Title("ZombiHunter (version: $version)");
 	$CONSOLE->SetIcon("./graphics/skull_01.ico");  # set application icon
 	$CONSOLE->Window(1, 0, 0, 80, 25);	        # set size of console
 }
