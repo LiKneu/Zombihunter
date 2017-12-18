@@ -20,6 +20,7 @@ our @ISA = qw ( Exporter );
 our @EXPORT = qw (
 	scan_folders
 	process_file
+	get_time_stamp
 	);
 
 my $fh;     # file handle to output scan results
@@ -33,16 +34,7 @@ my $csv;
 sub scan_folders {
 	my $dir = shift;    # get starting directory for scanning
 
-	my @present_time = localtime ( time );
-
-	# file name format: zh_log_YYYY-MM-TT_hh_mm_ss.txt
-	my $time_stamp =
-		($present_time[5] += 1900) .    # year
-		'-' . ($present_time[4] += 1) . # month
-		'-' . $present_time[3] .        # day
-		'_' . $present_time[2] .        # hour
-		'_' . $present_time[1] .        # min
-		'_' . $present_time[0];         # sec
+	my $time_stamp = get_time_stamp();
 
 	my $logfile_name = '.\scans\zh_log_' . $time_stamp . '.txt';
 
@@ -144,6 +136,24 @@ sub checksum {
 	else {
 		say $err_fh "Cant open $file for MD5 calculation: $!";
 	}
+}
+
+#-------------------------------------------------------------------------------
+#   Returns a formatted time stamp e.g. for log file naming.
+#
+sub get_time_stamp {
+	my @present_time = localtime ( time );
+
+	# format: YYYY-MM-DD_hh_mm_ss
+	my $time_stamp =
+		($present_time[5] += 1900) .    # year
+			'-' . ($present_time[4] += 1) . # month
+			'-' . $present_time[3] .        # day
+			'_' . $present_time[2] .        # hour
+			'_' . $present_time[1] .        # min
+			'_' . $present_time[0];         # sec
+
+	return $time_stamp;
 }
 
 1;
