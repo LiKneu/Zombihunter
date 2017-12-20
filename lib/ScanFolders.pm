@@ -50,7 +50,7 @@ sub scan_folders {
 	open $err_fh, ">:encoding(utf8)", './logs/error_' . $time_stamp . '.log' or
 		die "Couldn't open file for error log $err_fh: $!";
 
-	say $fh "DIRECTORY SCAN FROM $time_stamp: $dir";
+	say $fh "\"DIRECTORY SCAN FROM $time_stamp: $dir\"";
 
 	Directory::Scanner->for($dir)
 		->recurse                           # recurse through subdirectories
@@ -59,7 +59,7 @@ sub scan_folders {
 		->stream                            # start streaming
 		->flatten;                          # flatten object to array??
 
-	print $fh "END OF SCAN FILE";
+	print $fh "\"END OF SCAN FILE\"";
 
 	close $err_fh;
 	close $fh;
