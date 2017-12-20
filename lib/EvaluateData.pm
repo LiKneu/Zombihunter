@@ -42,7 +42,7 @@ sub read_log {
 		die "Couldn't open $logfile: $!";
 
 	while ( my $row = $csv->getline( $fh ) ) {
-#		say path($row->[0])->basename;
+		next if $row->[0] =~ /^DIRECTORY SCAN FROM|^END OF SCAN FILE/;
 		my $file_key = path($row->[0])->basename . $row->[2] . $row->[6];
 		push @{$data{$file_key}}, $row;
 	}
