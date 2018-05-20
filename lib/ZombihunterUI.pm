@@ -10,6 +10,7 @@ use warnings;
 use 5.24.0;
 
 use Win32::Console;
+use Path::Tiny;
 
 use lib::ScanFolders;
 
@@ -23,6 +24,7 @@ our @EXPORT = qw (
 	edit_config
 	show_scan_folder
 	show_scanning
+	show_scanfiles
 	show_help
 	);
 
@@ -45,7 +47,8 @@ sub show_main_menu {
 	print "\n  M A I N  M E N U\n\n";
 	print "  1 - edit settings\n";
 	print "  2 - scan folder\n";
-	print "  3 - reorganize folder\n";
+	print "  3 - generate statistics\n";
+	print "  4 - reorganize folder\n";
 	print "\n  h - help\n";
 	print "  q - exit program\n\n";
 	print "\n  Your choice: ";
@@ -110,6 +113,37 @@ sub show_scanning {
 }
 
 #-------------------------------------------------------------------------------
+#
+#
+sub show_scanfiles {
+	my $scanfiles = shift;      # array ref holding all available scanfiles
+
+	$CONSOLE->Cls();
+	print "\n  A V A I L A B L E  S C A N F I L E S\n\n";
+	print "\n  Following scanfiles are available:\n";
+
+	my $nmbr = 1;
+	foreach my $set ( @$scanfiles ) {
+		$nmbr = ' ' . $nmbr if $nmbr < 10;
+		say "  $nmbr) $set->[1]";
+		$nmbr++;
+	}
+
+	print "\n  Choose one of the numbers: ";
+	my $input = <STDIN>;
+	chomp $input;
+	if ( $input =~ /[0-9]{1,2}/ and $input <= scalar @$scanfiles ) {
+		return $input;
+	}
+	else {
+		say "\n  $input is not a file number!";
+		print "\n  Press any key to continue... ";
+		$input = <STDIN>;
+		return undef;
+	}
+}
+
+#-------------------------------------------------------------------------------
 #   Show help for Zombihunter
 #
 sub show_help {
@@ -125,7 +159,10 @@ sub show_help {
       The scanning process can take a while since during this process a MD5
       checksum of each file is calculated to help identifying double files even
       though they might have different names.
-  3 - reorganize folder
+  3 - generate statistics
+      Generates a statistics based on one of the scanfiles.
+      Statistics are e.g. how many files and directories were scanned.
+  4 - reorganize folder
       This starts to copy the first of each double files family into the common
       directory, deletion of all doublettes and replacement of those files by
       Windows shortcuts.
