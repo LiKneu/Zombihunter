@@ -54,7 +54,7 @@ sub scan_folders {
 
 	Directory::Scanner->for($dir)
 		->recurse                           # recurse through subdirectories
-		->ignore(sub { $_->is_dir })        # ignore directories
+#		->ignore(sub { $_->is_dir })        # ignore directories
 		->apply (sub { process_file ($_)})  # apply function to each found object
 		->stream                            # start streaming
 		->flatten;                          # flatten object to array??
@@ -77,44 +77,60 @@ sub scan_folders {
 #
 sub process_file {
 	my $path = shift;
-	state $count;
+	state $count;   # static variable to store a file counter
 
-	# give the status of the scanning process so that user doesn't interrupt
-	# the script
-	$lib::ZombihunterUI::CONSOLE->WriteChar (
-		"No. of files scanned: " . $count++, 2, 4 );
+	my $line;   # variable to store string to be printed to scan file log
 
-	# clear content in the console before..
-	$lib::ZombihunterUI::CONSOLE->FillChar(" ", 100*4, 0, 6);
-	# ..writing it anew
-	$lib::ZombihunterUI::CONSOLE->WriteChar ( $path, 2, 6 );
-
-	my $md5 = checksum ( $path );
-
-	# split filename at '.' to get the extension
-	my @filecomponents = split ( /\./, $path->basename);
-
-	my $extension;
-	if ( scalar @filecomponents > 1 ) {
-		$extension = $filecomponents[-1];   # file has an extension
+	if ( $path->is_dir ) {
+		# in case of a directory only the path information as well as a
+		# directory flag (instead of the file extension) are stored
+		$line = [
+			$path,
+			"DIR",      # extension
+			"",         # file size
+			"",         # last access
+			"",         # last modified
+			"",         # last change
+			"" ];       # MD5 checksum
 	}
 	else {
-		$extension = '';                    # file doesn't have an extension
-	}
+		# give the status of the scanning process so that user doesn't interrupt
+		# the script
+		$lib::ZombihunterUI::CONSOLE->WriteChar(
+			"No. of files scanned: " . $count++, 2, 4);
 
-	#  7: file size
-	#  8: date last access
-	#  9: last modification
-	# 10: last change
-	my ($file_size, $last_access, $last_mod, $last_change) = (stat $path)[7..10];
-	my $line = [
-		$path,
-		$extension,
-		$file_size,
-		$last_access,
-		$last_mod,
-		$last_change,
-		$md5 ];
+		# clear content in the console before..
+		$lib::ZombihunterUI::CONSOLE->FillChar(" ", 100 * 4, 0, 6);
+		# ..writing it anew
+		$lib::ZombihunterUI::CONSOLE->WriteChar($path, 2, 6);
+
+		my $md5 = checksum($path);
+
+		# split filename at '.' to get the extension
+		my @filecomponents = split(/\./, $path->basename);
+
+		my $extension;
+		if ( scalar @filecomponents > 1 ) {
+			$extension = $filecomponents[-1]; # file has an extension
+		}
+		else {
+			$extension = ''; # file doesn't have an extension
+		}
+
+		#  7: file size
+		#  8: date last access
+		#  9: last modification
+		# 10: last change
+		my ($file_size, $last_access, $last_mod, $last_change) = (stat $path)[7 .. 10];
+		$line = [
+			$path,
+			$extension,
+			$file_size,
+			$last_access,
+			$last_mod,
+			$last_change,
+			$md5 ];
+	}
 
 	my $status = $csv->print ($fh, $line);
 	print $fh "\n";
