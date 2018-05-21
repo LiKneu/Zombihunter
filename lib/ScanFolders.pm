@@ -5,8 +5,9 @@ use 5.24.0;
 
 use Data::Dumper;
 
-use Directory::Scanner;
+#use Directory::Scanner;
 use File::Find;
+use Path::Tiny;
 use Digest::MD5;
 use Text::CSV;
 use Win32::Console;
@@ -52,13 +53,20 @@ sub scan_folders {
 
 	say $fh "\"DIRECTORY SCAN FROM $time_stamp: $dir\"";
 
-	Directory::Scanner->for($dir)
-		->recurse                           # recurse through subdirectories
-#		->ignore(sub { $_->is_dir })        # ignore directories
-		->apply (sub { process_file ($_)})  # apply function to each found object
-		->stream                            # start streaming
-		->flatten;                          # flatten object to array??
+	# TODO: Delete Directory::Scanne function in case File::Find works with long path
+# Directory::Scanner has some issues on Windows with path names longer as
+# 260 characters thus I'll try to solve it with File::Find
+#	Directory::Scanner->for($dir)
+#		->recurse                           # recurse through subdirectories
+##		->ignore(sub { $_->is_dir })        # ignore directories
+#		->apply (sub { process_file ($_)})  # apply function to each found object
+#		->stream                            # start streaming
+#		->flatten;                          # flatten object to array??
+						
+	find(\&wanted, $dir);
 
+	# this line is added to the log file to allow for checking whether the
+	# logging process ran till the end or was interrupted unintended
 	print $fh "\"END OF SCAN FILE\"";
 
 	close $err_fh;
@@ -75,8 +83,86 @@ sub scan_folders {
 #       last change
 #       MD5 checksum
 #
+#	wanted() is a replacement for process_file()
+#	wanted() is used im combination with File::Find and can't be renamed
+#
+sub wanted {
+	state $count;   # static variable to store a file counter
+	my $path = path($File::Find::name);
+	my $filename = $_;
+
+	my $line;   # variable to store string to be printed to scan file log
+
+	if ($path->is_dir) {
+#	if ( -d ) {
+		# in case of a directory only the path information as well as a
+		# directory flag (instead of the file extension) are stored
+		$line = [
+			$path,
+			"DIR",      # extension
+			"",         # file size
+			"",         # last access
+			"",         # last modified
+			"",         # last change
+			"" ];       # MD5 checksum
+	}
+	else {
+		# give the status of the scanning process so that user doesn't interrupt
+		# the script
+		$lib::ZombihunterUI::CONSOLE->WriteChar(
+			"No. of files scanned: " . $count++, 2, 4);
+
+		# clear content in the console before..
+		$lib::ZombihunterUI::CONSOLE->FillChar(" ", 100 * 4, 0, 6);
+		# ..writing it anew
+		$lib::ZombihunterUI::CONSOLE->WriteChar($path, 2, 6);
+
+		my $md5 = checksum($path);
+
+		# split filename at '.' to get the extension
+		my @filecomponents = split(/\./, $path->basename);
+
+		my $extension;
+		if ( scalar @filecomponents > 1 ) {
+			$extension = $filecomponents[-1]; # file has an extension
+		}
+		else {
+			$extension = ''; # file doesn't have an extension
+		}
+
+		#  7: file size
+		#  8: date last access
+		#  9: last modification
+		# 10: last change
+		my ($file_size, $last_access, $last_mod, $last_change) = (stat $path)[7 .. 10];
+		$line = [
+			$path,
+			$extension,
+			$file_size,
+			$last_access,
+			$last_mod,
+			$last_change,
+			$md5 ];
+	}
+
+	my $status = $csv->print ($fh, $line);
+	print $fh "\n";
+}
+
+# TODO: Delete process_file() in case File::Find & wanted() works with long path
+#-------------------------------------------------------------------------------
+#   Processes a file and determines the following information about it:
+#       path
+#       extension
+#       file size
+#       last access
+#       last modification
+#       last change
+#       MD5 checksum
+#
 sub process_file {
 	my $path = shift;
+	say $path;
 	state $count;   # static variable to store a file counter
 
 	my $line;   # variable to store string to be printed to scan file log
